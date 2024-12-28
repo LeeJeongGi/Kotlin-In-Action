@@ -272,3 +272,132 @@ println(listOf(1,2,3,4).asSequence()
   - 3 -> map (9) -> find (it > 3) 처리 >> 종료되어 작업 안함.
   - 4 -> map (16) -> find (it > 3) 처리 >> 종료되어 작업 안함.
 - 각각 원소마다 실행 되기 때문에 find 해서 원소 4를 반환하고 뒤에 3, 4 에 대해서는 더 이상 진행하지 않는다.
+
+### 자바 함수형 인터페이스 활용
+
+```java
+public interface OnClickListener {
+  void onClick(View v);
+}
+
+public class Button {
+  public void setOnClickListener(OnClickListener l) { /**/ }
+}
+
+public static void main(String[] args) {
+  Button button = new Button();
+  button.setOnClickListener(new OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        /* 무명 클래스 작성 */
+    }
+  });
+}
+```
+- 기존 자바에서는 이렇게 무명 클래스를 넘겨야 했다.
+- 코틀린에서는 무명 클래스 인스턴스 대신 람다를 넘길 수 있다.
+```kotlin
+button.setOnClickListener { view -> ...}
+```
+- 이런 코드가 동작하는 이유는 OnClickListener에 추상 메서드가 단 하나만 있기 때문이다.
+- 그런 인터페이스를 `함수형 인터페이스`라고 한다.
+- 코틀린은 함수형 인터페이스를 인자로 취하는 자바 메서드를 호출할 때 람다를 넘길 수 있게 해준다.
+
+### 자바 메소드에 람다를 인자로 전달
+- 함수형 인터페이스를 인자로 원하는 자바 메소드에 코틀린 람다를 전달할 수 있다.
+
+```java
+void postponeComputation(int delay, Runnable computation);
+```
+- 코틀린에서 람다를 이 함수에 넘길 수 있다.
+```kotlin
+postponeComputation(1000) {println(42)}
+```
+- 컴파일러는 자동으로 람다({} 안에 식)를 Runnable 인스턴스로 변환해준다.
+- 람다와 무명 객체 사이에는 차이가 있음.
+  - 객체를 명시적으로 선언하는 경우 메소드를 호출할 때마다 새로운 객체가 생성된다.
+  - 흠,,, 함수형 인터페이스를 받는 자바 메소드를 코틀린에서 호출할 때 쓰는 방식이라..어찌고..
+  - 그래서 코틀린에서는 inline으로 표시된 코틀린 함수에게 람다를 넘기면 아무런 무명 클래스도 만들어지지 않는다! 결론..
+
+### 수신 객체 지정 람다: with와 apply
+```kotlin
+fun alphabet(): String {
+    val result = StringBuilder()
+    for (letter in 'A'..'Z') {
+        result.append(letter)
+    }
+
+    result.append("\nNow I know the alphabet!")
+    return result.toString()
+}
+```
+- with를 사용하기 전에 일반적으로 for 문을 사용해서 알파벳을 만드는 구문이다.
+- 코드가 우선 상당히 길다.
+```kotlin
+fun alphabet2(): String {
+    val result = StringBuilder()
+    return with(result) { // 수신 객체를 지정
+        for (letter in 'A'..'Z') {
+            this.append(letter) // this를 명시해서 앞에서 지정한 수신 객체의 메소드를 호출한다.
+        }
+        append("\nNow I know the alphabet!")
+        this.toString()
+    }
+}
+```
+- with문은 언어가 제공하는 특별한 구문처럼 보인다.
+- 하지만 실제로는 파라미터가 2개 있는 함수다.
+- 첫 번째 파라미터는 StringBuilder이고 두 번째 파라미터는 람다다.
+
+```kotlin
+fun alphabet3(): String {
+    return with(StringBuilder()) {
+        for (letter in 'A'..'Z') {
+            append(letter)
+        }
+        append("\nNow I know the alphabet!")
+        toString()
+    }
+}
+```
+- StringBuilder 변수를 없애면 더 깔끔하다.
+
+### apply 함수
+- 거의 with와 동일하다.
+- 유일한 차이는 apply는 항상 자신에게 전달된 객체를 반환한다는 점뿐이다.
+
+```kotlin
+fun alphabet() = StringBuilder().apply {
+    for (letter in 'A'..'Z') {
+        append(letter)
+    }
+    append("\\nNow I know the alphabet!")
+}.toString()
+```
+- StringBuilder에 정의된 확장 함수라고 생각하자.
+- apply의 수신 객체가 전달받은 람다의 수신 객체가 된다.
+- apply 함수는 객체의 인스턴스를 만들면서 즉시 프로퍼티 중 일부를 초기화해야 하는 경우 유용하다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
